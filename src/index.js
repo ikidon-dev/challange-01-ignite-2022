@@ -55,6 +55,7 @@ app.get("/todos", checksExistsUserAccount, (request, response) => {
 
 app.post("/todos", checksExistsUserAccount, (request, response) => {
   const { title, deadline } = request.body;
+  const { user } = request;
 
   const task = {
     id: uuidv4(),
@@ -64,10 +65,7 @@ app.post("/todos", checksExistsUserAccount, (request, response) => {
     created_at: new Date(),
   };
 
-  const userIndex = users.findIndex(
-    (user) => user.username === request.user.username
-  );
-  users[userIndex].todos.push(task);
+  user.todos.push(task);
 
   return response.status(201).json(task);
 });
@@ -75,69 +73,46 @@ app.post("/todos", checksExistsUserAccount, (request, response) => {
 app.put("/todos/:id", checksExistsUserAccount, (request, response) => {
   const { title, deadline } = request.body;
   const { id } = request.params;
+  const { user } = request;
 
-  const userIndex = users.findIndex(
-    (user) => user.username === request.user.username
-  );
+  const task = user.todos.find((task) => task.id === id);
 
-  const taskIndex = request.user.todos.findIndex((task) => task.id === id);
-
-  if (taskIndex == -1) {
+  if (!task) {
     return response.status(404).json({ error: "This task does not exist" });
   }
 
-  const task = request.user.todos[taskIndex];
+  task.title = title;
+  task.deadline = deadline;
 
-  const updatedTask = {
-    ...task,
-    title,
-    deadline,
-  };
-
-  users[userIndex].todos[taskIndex] = updatedTask;
-
-  return response.json(updatedTask);
+  return response.json(task);
 });
 
 app.patch("/todos/:id/done", checksExistsUserAccount, (request, response) => {
   const { id } = request.params;
+  const { user } = request;
 
-  const userIndex = users.findIndex(
-    (user) => user.username === request.user.username
-  );
+  const task = user.todos.find((task) => task.id === id);
 
-  const taskIndex = request.user.todos.findIndex((task) => task.id === id);
-
-  if (taskIndex == -1) {
+  if (!task) {
     return response.status(404).json({ error: "This task does not exist" });
   }
 
-  const task = request.user.todos[taskIndex];
+  task.done = true;
 
-  const updatedTask = {
-    ...task,
-    done: true,
-  };
-
-  users[userIndex].todos[taskIndex] = updatedTask;
-
-  return response.json(updatedTask);
+  return response.json(task);
 });
 
 app.delete("/todos/:id", checksExistsUserAccount, (request, response) => {
   const { id } = request.params;
+  const { user } = request;
 
-  const userIndex = users.findIndex(
-    (user) => user.username === request.user.username
-  );
+  const taskIndex = user.todos.findIndex((task) => task.id === id);
 
-  const taskIndex = request.user.todos.findIndex((task) => task.id === id);
-
-  if (taskIndex == -1) {
+  if (taskIndex === -1) {
     return response.status(404).json({ error: "This task does not exist" });
   }
 
-  users[userIndex].todos = request.user.todos.splice(taskIndex, -1);
+  user.todos.splice(taskIndex, 1);
 
   return response.status(204).json();
 });
